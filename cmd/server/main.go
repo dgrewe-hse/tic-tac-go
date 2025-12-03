@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	httpserver "github.com/dgre/tic-tac-go/internal/http"
+	httpserver "tic-tac-go/internal/http"
 )
 
 // main is the entrypoint for the Tic-Tac-Go server application.
