@@ -1,0 +1,25 @@
+{
+  "name": "Tic-Tac-Go Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "workspaceFolder": "/workspace",
+  "settings": {
+    "go.toolsManagement.autoUpdate": true,
+    "go.useLanguageServer": true,
+    "go.lintOnSave": "workspace"
+  },
+  "extensions": [
+    "golang.go",
+    "github.vscode-github-actions",
+    "ms-azuretools.vscode-docker"
+  ],
+  "forwardPorts": [
+    8080
+  ],
+  "postCreateCommand": "go mod tidy",
+  "remoteUser": "root"
+}
+
+
