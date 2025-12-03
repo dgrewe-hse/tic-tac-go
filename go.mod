@@ -1,4 +1,4 @@
-module github.com/dgre/tic-tac-go
+module tic-tac-go
 
 go 1.22
 
