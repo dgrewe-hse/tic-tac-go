@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/devcontainers/go:1-bookworm
 WORKDIR /workspace
 
 # Copy go.mod and go.sum first to leverage Docker layer caching
-COPY go.mod ./
+COPY go.mod go.sum ./
 
 RUN go mod download
 
