@@ -55,11 +55,17 @@ func NewRouter() http.Handler {
 	r.Get("/health", healthHandler)
 	// get a list of created games
 	r.Get("/games", ListGamesHandler(gameSvc))
+	// get existing game by id
+	r.Get("/games/{gameId}", GetGameHandler(gameSvc))
 
 	// Player endpoints.
 	r.Post("/players", CreatePlayerHandler(playerSvc))
 	// Game endpoints.
 	r.Post("/games", CreateGameHandler(gameSvc))
+	// join existing game by id
+	r.Post("/games/{gameId}/join", JoinGameHandler(gameSvc))
+	// make move within existing game
+	r.Post("/games/{gameId}/moves", MakeMoveHandler(gameSvc))
 
 	return r
 }

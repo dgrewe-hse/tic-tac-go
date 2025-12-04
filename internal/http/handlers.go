@@ -28,6 +28,8 @@ import (
 	"tic-tac-go/internal/models"
 	"tic-tac-go/internal/service"
 	"tic-tac-go/internal/store"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // ------------------------------------------
@@ -77,6 +79,11 @@ type listGamesResponse struct {
 	Games []gameSummaryDTO `json:"games"`
 }
 
+type makeMoveRequest struct {
+	Row int `json:"row"`
+	Col int `json:"col"`
+}
+
 // ----------------------
 
 // ----------------------
@@ -111,6 +118,23 @@ func CreatePlayerHandler(playerSvc service.PlayerService) http.HandlerFunc {
 		_ = json.NewEncoder(w).Encode(resp)
 	}
 }
+
+// healthHandler serves a minimal health check response so that clients
+// and deployment environments can verify the server is running.
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	resp := healthResponse{Status: "ok"}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
+// ----------------------
+
+// -----------------------------
+// GAME HANDLERS
 
 func CreateGameHandler(gameSvc service.GameService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -158,18 +182,6 @@ func CreateGameHandler(gameSvc service.GameService) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(resp)
-	}
-}
-
-// healthHandler serves a minimal health check response so that clients
-// and deployment environments can verify the server is running.
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	resp := healthResponse{Status: "ok"}
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
 	}
 }
 
@@ -226,4 +238,156 @@ func ListGamesHandler(gameSvc service.GameService) http.HandlerFunc {
 	}
 }
 
-// ----------------------
+func JoinGameHandler(gameSvc service.GameService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		playerID := PlayerIDFromContext(r.Context())
+		if playerID == "" {
+			http.Error(w, "missing X-Player-Id header", http.StatusBadRequest)
+			return
+		}
+
+		gameID := chi.URLParam(r, "gameId")
+		if gameID == "" {
+			http.Error(w, "missing gameId", http.StatusBadRequest)
+			return
+		}
+
+		gameState, err := gameSvc.JoinGame(r.Context(), gameID, playerID)
+		if err != nil {
+			switch {
+			case errors.Is(err, service.ErrInvalidGameState):
+				http.Error(w, "invalid game state", http.StatusBadRequest)
+				return
+			case errors.Is(err, store.ErrGameNotFound):
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			default:
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// build response using existing helper-style logic
+		board := make([][]string, 3)
+		for i := 0; i < 3; i++ {
+			board[i] = make([]string, 3)
+			for j := 0; j < 3; j++ {
+				board[i][j] = string(gameState.Board[i][j])
+			}
+		}
+
+		resp := createGameResponse{
+			GameID:      gameState.ID,
+			Mode:        string(gameState.Mode),
+			Board:       board,
+			CurrentTurn: string(gameState.CurrentTurn),
+			Status:      string(gameState.Status),
+			Winner:      gameState.Winner,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func GetGameHandler(gameSvc service.GameService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gameID := chi.URLParam(r, "gameId")
+		if gameID == "" {
+			http.Error(w, "missing gameId", http.StatusBadRequest)
+			return
+		}
+
+		gameState, err := gameSvc.GetGame(r.Context(), gameID)
+		if err != nil {
+			if errors.Is(err, store.ErrGameNotFound) {
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			}
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		board := make([][]string, 3)
+		for i := 0; i < 3; i++ {
+			board[i] = make([]string, 3)
+			for j := 0; j < 3; j++ {
+				board[i][j] = string(gameState.Board[i][j])
+			}
+		}
+
+		resp := createGameResponse{
+			GameID:      gameState.ID,
+			Mode:        string(gameState.Mode),
+			Board:       board,
+			CurrentTurn: string(gameState.CurrentTurn),
+			Status:      string(gameState.Status),
+			Winner:      gameState.Winner,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func MakeMoveHandler(gameSvc service.GameService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		playerID := PlayerIDFromContext(r.Context())
+		if playerID == "" {
+			http.Error(w, "missing X-Player-Id header", http.StatusBadRequest)
+			return
+		}
+
+		gameID := chi.URLParam(r, "gameId")
+		if gameID == "" {
+			http.Error(w, "missing gameId", http.StatusBadRequest)
+			return
+		}
+
+		var req makeMoveRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		gameState, err := gameSvc.MakeMove(r.Context(), gameID, playerID, req.Row, req.Col)
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrGameNotFound):
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			case errors.Is(err, service.ErrNotParticipant):
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
+			case errors.Is(err, service.ErrNotPlayersTurn),
+				errors.Is(err, service.ErrInvalidMove),
+				errors.Is(err, service.ErrInvalidGameState):
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			default:
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		board := make([][]string, 3)
+		for i := 0; i < 3; i++ {
+			board[i] = make([]string, 3)
+			for j := 0; j < 3; j++ {
+				board[i][j] = string(gameState.Board[i][j])
+			}
+		}
+
+		resp := createGameResponse{
+			GameID:      gameState.ID,
+			Mode:        string(gameState.Mode),
+			Board:       board,
+			CurrentTurn: string(gameState.CurrentTurn),
+			Status:      string(gameState.Status),
+			Winner:      gameState.Winner,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+}
