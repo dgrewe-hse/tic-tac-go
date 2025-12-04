@@ -40,7 +40,42 @@ You should receive:
 {"status":"ok"}
 ```
 
-Further endpoints and game logic will be implemented in subsequent steps.
+### HTTP API overview (for frontend developers)
+
+The backend currently exposes the following REST endpoints (all paths are prefixed with `http://localhost:8080` by default):
+
+- `POST /players`
+  - Request body: `{"name": "Alice"}`
+  - Response: `{"playerId": "...","name":"Alice"}`
+  - Used to obtain a `playerId` that is then sent in the `X-Player-Id` header for all game-related calls.
+
+- `POST /games`
+  - Headers: `X-Player-Id: <playerId>`
+  - Request body: `{"mode": "PVP"}` or `{"mode": "PVC"}`
+  - Response: game state:
+    - `gameId`, `mode`, `board` (`3x3` array of `"X" | "O" | ""`), `currentTurn`, `status`, `winner`.
+
+- `GET /games`
+  - Query parameters (optional):
+    - `mode` = `PVP` or `PVC`
+    - `status` = `WAITING_FOR_PLAYER` | `IN_PROGRESS` | `FINISHED`
+    - `limit`, `offset` (pagination)
+  - Response: `{ "games": [ { "gameId", "mode", "status", "createdAt", "createdBy": { "playerId", "name" } } ] }`
+  - Typical frontend usage: list open PVP games with `GET /games?mode=PVP&status=WAITING_FOR_PLAYER`.
+
+- `GET /games/{gameId}`
+  - Response: same shape as `POST /games` response for that specific game.
+
+- `POST /games/{gameId}/join`
+  - Headers: `X-Player-Id: <playerId>`
+  - Response: full game state after the player joined (PVP only; second player becomes `"O"`).
+
+- `POST /games/{gameId}/moves`
+  - Headers: `X-Player-Id: <playerId>`
+  - Request body: `{"row": 0, "col": 2}`
+  - Response: updated game state after the move (and, in PVC mode, after the AI response move if applicable).
+
+For concrete example calls and typical flows (create player → create game → list games → join → make moves), see the shell scripts documented in `scripts/README.md`.
 
 ### Development
 

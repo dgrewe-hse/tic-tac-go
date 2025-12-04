@@ -26,11 +26,14 @@ import (
 
 // OppositeSymbol function returns the other player's symbol (so X <--> O)
 func OppositeSymbol(s models.Symbol) models.Symbol {
-	if s == models.SymbolX {
+	switch s {
+	case models.SymbolX:
 		return models.SymbolO
+	case models.SymbolO:
+		return models.SymbolX
+	default:
+		return models.SymbolEmpty
 	}
-	// else
-	return models.SymbolX
 }
 
 // NewBoard creates a new empty 3x3 game board
