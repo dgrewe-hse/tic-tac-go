@@ -8,7 +8,7 @@
   <img alt="Made at HSE Esslingen" src="https://img.shields.io/badge/made%20at-HSE%20Esslingen-0a7ea4">
 </p>
 
-> IMPORTANT: This repository is for educational purposes only. It may contain unfinished, faulty, or even non-executable code used solely for teaching during the Software Testing course. Do not use this repository for any production system.
+> IMPORTANT: This repository is for educational purposes only. It may contain unfinished, faulty, or even non-executable code used solely for teaching during the Internet Technologies course. Do not use this repository for any production system.
 
 ---
 
