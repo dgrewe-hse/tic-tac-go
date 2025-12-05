@@ -4,7 +4,6 @@
   <a href="LICENSE"><img alt="Educational" src="https://img.shields.io/badge/status-educational-blue"></a>
   <a href="docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-available-brightgreen"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Labs" src="https://img.shields.io/badge/labs-12_planned-informational">
   <img alt="Made at HSE Esslingen" src="https://img.shields.io/badge/made%20at-HSE%20Esslingen-0a7ea4">
 </p>
 
