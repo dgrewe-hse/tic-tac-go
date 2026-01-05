@@ -13,18 +13,48 @@
 
 This repository contains a minimal Go backend for a Tic-Tac-Toe game server, designed to expose REST and WebSocket APIs for frontends such as Angular or Vue. This project is guided by the design document in `docs/spec.md`.
 
-### Running the server
+### Building and Running the server
 
-From the project root:
+#### Prerequisites
 
-```bash
-go run ./cmd/server
-```
+- Go 1.22 or higher installed
+- Git (to clone the repository)
+
+#### Setup
+
+1. **Install dependencies:**
+   ```bash
+   go mod download
+   ```
+
+2. **Build the server (optional):**
+   ```bash
+   go build -o tic-tac-go-server ./cmd/server
+   ```
+   This creates an executable binary `tic-tac-go-server` that can be run directly.
+
+3. **Run the server:**
+
+   **Option A: Run directly with `go run` (recommended for development):**
+   ```bash
+   go run ./cmd/server
+   ```
+
+   **Option B: Run the compiled binary:**
+   ```bash
+   ./tic-tac-go-server
+   ```
 
 By default the server listens on port `8080`. You can override this via:
 
 ```bash
 TICTACGO_PORT=9090 go run ./cmd/server
+```
+
+or for the compiled binary:
+
+```bash
+TICTACGO_PORT=9090 ./tic-tac-go-server
 ```
 
 Once running, you can verify the basic health endpoint:
