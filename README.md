@@ -233,6 +233,26 @@ PLAYER_ID="$PLAYER_ID_ALICE" GAME_ID="$GAME_ID" ROW=0 COL=0 ./scripts/06_make-mo
 # 4. Watch the WebSocket terminal for real-time updates
 ```
 
+### Docker Deployment
+
+The server can be deployed using Docker for production environments.
+
+**Quick start with Docker Compose:**
+```bash
+docker-compose up -d
+```
+
+**Manual Docker build and run:**
+```bash
+# Build the image
+docker build -t tic-tac-go-server:latest .
+
+# Run the container
+docker run -d --name tic-tac-go-server -p 8080:8080 tic-tac-go-server:latest
+```
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ### Development
 
 If you prefer to develop or run the project inside a preconfigured container, this repository includes a Dev Container setup under the `.devcontainer` directory.
