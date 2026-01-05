@@ -43,6 +43,123 @@ In dieser Aufgabe implementieren Sie ein **Frontend für ein Tic-Tac-Toe-Spiel**
 
 ---
 
+## Aufgabenbeschreibung
+
+### Teilaufgabe 1: Grundfunktionalitäten implementieren
+
+Ziel: Entwickeln Sie die Grundstruktur einer Tic-Tac-Toe-Frontend-Anwendung mit allen notwendigen Funktionalitäten zur Interaktion mit dem Backend-Server.
+
+**Hinweise:** Ziehen Sie zur Umsetzung dieser Teilaufgabe folgende Leitfragen zu Hilfe:
+
+- Welche Komponenten benötigen Sie für die verschiedenen Spielzustände? (z.B. `PlayerForm.vue`, `GameModeSelection.vue`, `GameBoard.vue`, `GameStatus.vue`)
+- Wie organisieren Sie Ihr Projekt in einer übersichtlichen Ordnerstruktur?
+- Wie gestalten Sie das Layout, sodass die Komponenten ein konsistentes Erscheinungsbild haben?
+- Wie nutzen Sie Props und Emits (Vue) oder Props und Callbacks (React), um Daten zwischen Komponenten zu strukturieren?
+
+**Zu implementierende Funktionalitäten:**
+
+1. **Spieler-Registrierung**
+   - Eingabefeld für Spielernamen
+   - Erstellung eines Spielers über die REST API (`POST /players`)
+   - Speicherung der `playerId` im `localStorage`
+   - Automatische Erkennung bei erneutem Besuch (wenn `playerId` im `localStorage` vorhanden)
+
+2. **Spielmodus-Auswahl**
+   - Auswahl zwischen **PVP (Player vs Player)** und **PVC (Player vs Computer)**
+   - Klare visuelle Unterscheidung der Modi
+   - Navigation zu entsprechenden Spielabläufen
+
+3. **PVP-Spiel-Fluss**
+   - **Spiel erstellen:**
+     - Button/Formular zum Erstellen eines neuen PVP-Spiels
+     - API-Aufruf: `POST /games` mit `mode: "PVP"`
+     - Anzeige des erstellten Spiels mit `gameId`
+     - Status: `WAITING_FOR_PLAYER`
+   
+   - **Spiele auflisten:**
+     - Liste aller verfügbaren PVP-Spiele mit Status `WAITING_FOR_PLAYER`
+     - API-Aufruf: `GET /games?mode=PVP&status=WAITING_FOR_PLAYER`
+     - Anzeige von Spielinformationen (Ersteller, Erstellungszeit)
+     - Button zum Beitreten zu einem Spiel
+   
+   - **Spiel beitreten:**
+     - API-Aufruf: `POST /games/{gameId}/join`
+     - Automatischer Wechsel zum Spielbildschirm nach erfolgreichem Beitritt
+
+4. **PVC-Spiel-Fluss**
+   - **Spiel erstellen:**
+     - Button/Formular zum Erstellen eines neuen PVC-Spiels
+     - API-Aufruf: `POST /games` mit `mode: "PVC"`
+     - Automatischer Start des Spiels (Status: `IN_PROGRESS`)
+     - Spieler ist immer **X**, KI ist **O**
+
+5. **Spieloberfläche**
+   - **Spielfeld (3x3 Grid):**
+     - Visuelle Darstellung des Spielfelds
+     - Klickbare Zellen für leere Felder
+     - Anzeige von X und O in belegten Feldern
+     - Deaktivierung von Zellen, die nicht klickbar sein sollten
+   
+   - **Spielstatus-Anzeige:**
+     - Aktueller Spieler am Zug (`currentTurn`)
+     - Spielstatus (`WAITING_FOR_PLAYER`, `IN_PROGRESS`, `FINISHED`)
+     - Gewinner-Anzeige (X, O, oder DRAW)
+     - Spieler-Informationen (wer ist X, wer ist O)
+   
+   - **Zug machen:**
+     - Klick auf leere Zelle
+     - API-Aufruf: `POST /games/{gameId}/moves` mit `row` und `col`
+     - Aktualisierung des Spielfelds nach erfolgreichem Zug
+     - Bei PVC: Automatische Anzeige des KI-Zugs (kommt in der Response)
+
+6. **Echtzeit-Updates mit WebSocket**
+   - WebSocket-Verbindung zu `ws://localhost:8080/ws/games/{gameId}` aufbauen
+   - Empfang von Spielzustands-Updates in Echtzeit
+   - Automatische UI-Aktualisierung bei:
+     - Gegnerzug (PVP)
+     - Spielerbeitritt (PVP)
+     - Spielende (Gewinner/Unentschieden)
+   - Fallback zu Polling (`GET /games/{gameId}`) falls WebSocket fehlschlägt
+
+7. **Fehlerbehandlung**
+   - Netzwerkfehler anzeigen
+   - Ungültige Züge verhindern/erklären
+   - Server-Fehler (400, 403, 404, 500) benutzerfreundlich anzeigen
+   - WebSocket-Verbindungsfehler behandeln
+
+8. **Spielende und Neustart**
+   - Anzeige des Gewinners oder Unentschiedens
+   - Button zum Starten eines neuen Spiels
+   - Navigation zurück zur Spielmodus-Auswahl
+
+### Teilaufgabe 2: Erweiterte Funktionalitäten (Optional)
+
+**Optionale Erweiterungen, die die Bewertung positiv beeinflussen können:**
+
+1. **Spielhistorie / Statistik**
+   - Lokale Speicherung von beendeten Spielen
+   - Anzeige einer Historie der letzten Spiele
+   - Statistik (Gewinne, Niederlagen, Unentschieden)
+   - **Hinweis:** Der Server speichert keine Historie, daher müssen Sie diese im Frontend (z.B. `localStorage`) verwalten
+
+2. **Verbesserte UI/UX**
+   - Animierte Züge
+   - Sound-Effekte (optional)
+   - Responsive Design für mobile Geräte
+   - Dark Mode / Theme-Switching
+
+3. **Erweiterte WebSocket-Funktionalität**
+   - Automatische Reconnect-Logik mit exponentieller Backoff-Strategie
+   - Verbindungsstatus-Anzeige (verbunden/getrennt)
+   - Ping/Pong für Keep-Alive
+
+4. **Spiel-Features**
+   - Countdown-Timer für Züge (Frontend-seitig)
+   - Highlighting der Gewinnlinie
+   - Zug-Historie (Undo-Funktion nur im Frontend, nicht im Backend)
+
+---
+
 ## Lernziele
 
 Nach Abschluss dieser Aufgabe sollten Sie:
@@ -1031,4 +1148,78 @@ Bei Fragen wenden Sie sich an:
 - E-Mail an Kursleiter
 
 **Viel Erfolg bei der Implementierung!**
+
+---
+
+## Reflexionsfragen
+
+Folgende Reflexionsfragen dienen Ihnen als Anhaltspunkt für die Lerninhalte und sollten in Ihrer Abgabe beantwortet werden:
+
+### Komponenten-Architektur
+
+1. **Wie haben Sie Ihre Anwendung in Komponenten zerlegt und warum?**
+   - Welche Komponenten haben Sie erstellt?
+   - Welche Kriterien haben Sie für die Komponenten-Aufteilung verwendet?
+   - Welche Komponenten sind wiederverwendbar und welche sind spezifisch?
+
+2. **Welche Architektur- oder Strukturierungsentscheidungen haben sich im Nachhinein als besonders sinnvoll erwiesen?**
+   - Wie haben Sie Services, Komponenten und State Management organisiert?
+   - Welche Entscheidungen würden Sie wieder so treffen?
+   - Was würden Sie beim nächsten Mal anders machen?
+
+### Framework und Technologien
+
+3. **Gab es Stellen, an denen Vue.js/React.js oder TypeScript Ihnen geholfen haben, Probleme eleganter zu lösen?**
+   - Welche Framework-Features haben Sie besonders nützlich gefunden?
+   - Wie hat TypeScript (falls verwendet) zur Code-Qualität beigetragen?
+   - Welche Vorteile bietet die Komponenten-basierte Architektur gegenüber traditionellem JavaScript?
+
+### API-Integration
+
+4. **Welche Herausforderungen sind beim Arbeiten mit REST-APIs aufgetreten und wie haben Sie diese gelöst?**
+   - Wie haben Sie Fehlerbehandlung implementiert?
+   - Welche Strategien haben Sie für Loading-States verwendet?
+   - Wie haben Sie die `playerId` und `gameId` durch die Anwendung verwaltet?
+
+5. **Welche Erfahrungen haben Sie mit WebSocket gemacht?**
+   - Wie unterscheidet sich die WebSocket-Integration von REST-API-Aufrufen?
+   - Welche Vorteile bietet WebSocket gegenüber Polling?
+   - Wie haben Sie Verbindungsfehler und Reconnects behandelt?
+
+### Benutzerfreundlichkeit
+
+6. **Welche Interaktivität steigert Ihrer Meinung nach die Benutzerfreundlichkeit Ihrer Anwendung am meisten – und warum?**
+   - Welche UI/UX-Features haben Sie implementiert?
+   - Wie haben Sie Feedback für Benutzeraktionen bereitgestellt?
+   - Welche Verbesserungen würden Sie bei mehr Zeit implementieren?
+
+### State Management
+
+7. **Wie haben Sie den Spielzustand in Ihrer Anwendung verwaltet?**
+   - Haben Sie lokalen State, Props, oder State Management (Vuex/Pinia, Redux) verwendet?
+   - Wie haben Sie Daten zwischen Komponenten geteilt?
+   - Welche Herausforderungen gab es beim State Management?
+
+### Code-Qualität und Best Practices
+
+8. **Welche Best Practices haben Sie in Ihrer Implementierung befolgt?**
+   - Wie haben Sie Code-Wiederverwendbarkeit erreicht?
+   - Welche Fehlerbehandlungs-Strategien haben Sie verwendet?
+   - Wie haben Sie sichergestellt, dass Ihr Code wartbar und erweiterbar ist?
+
+### Optional: Erweiterte Features
+
+9. **Falls Sie optionale Features implementiert haben:**
+   - Welche Erweiterungen haben Sie umgesetzt?
+   - Welche zusätzlichen Herausforderungen sind dabei aufgetreten?
+   - Wie haben Sie die Spielhistorie/Statistik implementiert (falls umgesetzt)?
+
+### Lernerfolg
+
+10. **Was haben Sie aus dieser Aufgabe gelernt?**
+    - Welche neuen Konzepte oder Technologien haben Sie kennengelernt?
+    - Welche Fähigkeiten konnten Sie verbessern?
+    - Was würden Sie anderen Studierenden empfehlen, die diese Aufgabe bearbeiten?
+
+**Hinweis:** Beantworten Sie diese Fragen in einem separaten Dokument (z.B. `REFLECTION.md`) oder als Abschnitt in Ihrer README.md. Die Reflexion sollte etwa 1-2 Seiten umfassen und zeigt Ihr Verständnis der verwendeten Technologien und Architektur-Entscheidungen.
 
