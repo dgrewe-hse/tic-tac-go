@@ -17,12 +17,13 @@
 # Version: 1.0.0
 # Date: 2025-12-03
 #
+# Usage: PLAYER_ID=<player-id> GAME_ID=<game-id> ./scripts/05_join-game.sh
 # NOTE: You need to create a player first (here: Alice), then use the player ID to create a game, afterwards you can get the game using its ID. Next, you need to create a second player (here: Bob), then use the player ID to join the game.
-# PLAYER_ID_ALICE=$(scripts/create-player.sh "Alice" | jq -r '.playerId')
-# GAME_ID=$(PLAYER_ID="$PLAYER_ID_ALICE" MODE=PVP scripts/create-game.sh | jq -r '.gameId')
-# GAME_ID="$GAME_ID" scripts/get-game.sh
-# PLAYER_ID_BOB=$(scripts/create-player.sh "Bob" | jq -r '.playerId')
-# PLAYER_ID="$PLAYER_ID_BOB" GAME_ID="$GAME_ID" scripts/join-game.sh
+# PLAYER_ID_ALICE=$(./scripts/01_create-player.sh "Alice" | jq -r '.playerId')
+# GAME_ID=$(PLAYER_ID="$PLAYER_ID_ALICE" MODE=PVP ./scripts/02_create-game.sh | jq -r '.gameId')
+# GAME_ID="$GAME_ID" ./scripts/04_get-game.sh
+# PLAYER_ID_BOB=$(./scripts/01_create-player.sh "Bob" | jq -r '.playerId')
+# PLAYER_ID="$PLAYER_ID_BOB" GAME_ID="$GAME_ID" ./scripts/05_join-game.sh
 
 set -euo pipefail
 

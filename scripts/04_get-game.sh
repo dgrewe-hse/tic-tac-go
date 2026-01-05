@@ -17,10 +17,11 @@
 # Version: 1.0.0
 # Date: 2025-12-03
 #
+# Usage: GAME_ID=<game-id> ./scripts/04_get-game.sh
 # NOTE: You need to create a player first (here: Alice), then use the player ID to create a game, afterwards you can get the game using its ID.
-# PLAYER_ID=$(scripts/create-player.sh "Alice" | jq -r '.playerId')
-# GAME_ID=$(PLAYER_ID="$PLAYER_ID" MODE=PVP scripts/create-game.sh | jq -r '.gameId')
-# GAME_ID="$GAME_ID" scripts/get-game.sh
+# PLAYER_ID=$(./scripts/01_create-player.sh "Alice" | jq -r '.playerId')
+# GAME_ID=$(PLAYER_ID="$PLAYER_ID" MODE=PVP ./scripts/02_create-game.sh | jq -r '.gameId')
+# GAME_ID="$GAME_ID" ./scripts/04_get-game.sh
 
 set -euo pipefail
 

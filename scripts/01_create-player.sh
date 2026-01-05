@@ -17,7 +17,7 @@
 # Version: 1.0.0
 # Date: 2025-12-03
 #
-# Usage: ./create-player.sh [NAME] 
+# Usage: ./scripts/01_create-player.sh [NAME] 
 
 
 # Default to localhost:8080 if API_BASE is not set

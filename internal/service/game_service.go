@@ -33,6 +33,7 @@ import (
 type gameService struct {
 	gameStore   store.GameStore
 	playerStore store.PlayerStore
+	broadcaster GameStateBroadcaster // Optional: nil if not provided
 }
 
 // NewGameService constructs a GameService with the given dependencies.
@@ -40,6 +41,16 @@ func NewGameService(gameStore store.GameStore, playerStore store.PlayerStore) Ga
 	return &gameService{
 		gameStore:   gameStore,
 		playerStore: playerStore,
+		broadcaster: nil,
+	}
+}
+
+// NewGameServiceWithBroadcaster constructs a GameService with a broadcaster for WebSocket updates.
+func NewGameServiceWithBroadcaster(gameStore store.GameStore, playerStore store.PlayerStore, broadcaster GameStateBroadcaster) GameService {
+	return &gameService{
+		gameStore:   gameStore,
+		playerStore: playerStore,
+		broadcaster: broadcaster,
 	}
 }
 
@@ -84,6 +95,11 @@ func (s *gameService) CreateGame(ctx context.Context, creatorPlayerID string, mo
 		return nil, err
 	}
 
+	// Broadcast state change to WebSocket clients
+	if s.broadcaster != nil {
+		s.broadcaster.BroadcastGameState(gameState.ID, gameState)
+	}
+
 	return gameState, nil
 }
 
@@ -116,6 +132,11 @@ func (s *gameService) JoinGame(ctx context.Context, gameID, playerID string) (*m
 
 	if err := s.gameStore.Update(gameState); err != nil {
 		return nil, err
+	}
+
+	// Broadcast state change to WebSocket clients
+	if s.broadcaster != nil {
+		s.broadcaster.BroadcastGameState(gameID, gameState)
 	}
 
 	return gameState, nil
@@ -206,6 +227,11 @@ func (s *gameService) MakeMove(ctx context.Context, gameID, playerID string, row
 
 	if err := s.gameStore.Update(gameState); err != nil {
 		return nil, err
+	}
+
+	// Broadcast state change to WebSocket clients
+	if s.broadcaster != nil {
+		s.broadcaster.BroadcastGameState(gameID, gameState)
 	}
 
 	return gameState, nil

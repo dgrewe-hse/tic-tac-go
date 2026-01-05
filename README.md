@@ -76,6 +76,133 @@ The backend currently exposes the following REST endpoints (all paths are prefix
 
 For concrete example calls and typical flows (create player → create game → list games → join → make moves), see the shell scripts documented in `scripts/README.md`.
 
+### WebSocket API overview (for frontend developers)
+
+The backend also supports **WebSocket connections** for real-time game state updates. This is an **alternative to polling** the REST API.
+
+#### Endpoint
+
+- **`GET /ws/games/{gameId}`** (WebSocket upgrade)
+  - URL: `ws://localhost:8080/ws/games/{gameId}` (or `wss://` for HTTPS)
+  - **Behavior:**
+    - Upgrades HTTP connection to WebSocket
+    - Validates that the game exists (returns 404 if not found)
+    - Immediately sends current game state to the newly connected client
+    - Registers connection for that `gameId` to receive future broadcasts
+    - Automatically broadcasts state updates when:
+      - A player joins the game
+      - A move is made (including AI moves in PVC mode)
+      - Game status changes (win/draw)
+
+#### Message Protocol
+
+**Server → Client messages:**
+
+1. **Game state update:**
+   ```json
+   {
+     "type": "state",
+     "payload": {
+       "gameId": "uuid",
+       "board": [["X", "", ""], ["", "O", ""], ["", "", ""]],
+       "currentTurn": "O",
+       "status": "IN_PROGRESS",
+       "winner": ""
+     }
+   }
+   ```
+
+2. **Error message:**
+   ```json
+   {
+     "type": "error",
+     "payload": {
+       "message": "Game not found"
+     }
+   }
+   ```
+
+**Client → Server:**
+
+- Currently, **all actions are sent via REST API only**:
+  - `POST /players` - Create player
+  - `POST /games` - Create game
+  - `POST /games/{gameId}/join` - Join game
+  - `POST /games/{gameId}/moves` - Make move
+- The WebSocket connection is **read-only** for receiving real-time updates
+- **Recommended pattern:** Use REST for actions, WebSocket for receiving updates
+
+#### Frontend Integration Example
+
+**JavaScript/TypeScript:**
+```javascript
+const gameId = "your-game-id";
+const ws = new WebSocket(`ws://localhost:8080/ws/games/${gameId}`);
+
+ws.onopen = () => {
+  console.log("WebSocket connected");
+};
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  if (message.type === "state") {
+    // Update UI with new game state
+    updateGameBoard(message.payload.board);
+    updateCurrentTurn(message.payload.currentTurn);
+    updateStatus(message.payload.status);
+    if (message.payload.winner) {
+      showGameOver(message.payload.winner);
+    }
+  } else if (message.type === "error") {
+    console.error("WebSocket error:", message.payload.message);
+  }
+};
+
+ws.onerror = (error) => {
+  console.error("WebSocket error:", error);
+};
+
+ws.onclose = () => {
+  console.log("WebSocket disconnected");
+  // Optionally reconnect or fall back to polling
+};
+```
+
+**Recommended pattern:**
+- Use WebSocket for **real-time updates** (opponent moves, game state changes)
+- Use REST API for **actions** (creating games, joining, making moves)
+- Fall back to polling `GET /games/{gameId}` if WebSocket connection fails
+
+#### Testing WebSocket
+
+A Go-based test client is available (no external dependencies):
+```bash
+# Terminal 1: Connect via WebSocket
+GAME_ID="..." go run scripts/07_websocket-test.go "$GAME_ID"
+
+# Terminal 2: Make moves via REST
+PLAYER_ID="..." GAME_ID="..." ROW=0 COL=0 ./scripts/06_make-move.sh
+
+# Watch Terminal 1 for real-time updates
+```
+
+**Complete example flow:**
+```bash
+# 1. Create players and game via REST
+PLAYER_ID_ALICE=$(./scripts/01_create-player.sh "Alice" | jq -r '.playerId')
+GAME_ID=$(PLAYER_ID="$PLAYER_ID_ALICE" MODE=PVP ./scripts/02_create-game.sh | jq -r '.gameId')
+
+# 2. Connect to WebSocket in one terminal
+go run scripts/07_websocket-test.go "$GAME_ID"
+
+# 3. In another terminal: join game and make moves via REST
+PLAYER_ID_BOB=$(./scripts/01_create-player.sh "Bob" | jq -r '.playerId')
+PLAYER_ID="$PLAYER_ID_BOB" GAME_ID="$GAME_ID" ./scripts/05_join-game.sh
+PLAYER_ID="$PLAYER_ID_ALICE" GAME_ID="$GAME_ID" ROW=0 COL=0 ./scripts/06_make-move.sh
+
+# 4. Watch the WebSocket terminal for real-time updates
+```
+
 ### Development
 
 If you prefer to develop or run the project inside a preconfigured container, this repository includes a Dev Container setup under the `.devcontainer` directory.

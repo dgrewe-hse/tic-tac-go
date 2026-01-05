@@ -21,6 +21,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -28,8 +29,10 @@ import (
 	"tic-tac-go/internal/models"
 	"tic-tac-go/internal/service"
 	"tic-tac-go/internal/store"
+	"tic-tac-go/internal/ws"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
 )
 
 // ------------------------------------------
@@ -389,5 +392,54 @@ func MakeMoveHandler(gameSvc service.GameService) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
+	}
+}
+
+// WebSocketHandler handles WebSocket connections for game updates.
+func WebSocketHandler(hub *ws.Hub, gameSvc service.GameService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gameID := chi.URLParam(r, "gameId")
+		if gameID == "" {
+			http.Error(w, "missing gameId", http.StatusBadRequest)
+			return
+		}
+
+		// Verify game exists
+		gameState, err := gameSvc.GetGame(r.Context(), gameID)
+		if err != nil {
+			if errors.Is(err, store.ErrGameNotFound) {
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			}
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		// Upgrade HTTP connection to WebSocket
+		upgrader := websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				// Allow all origins for development
+				return true
+			},
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("websocket upgrade error: %v", err)
+			return
+		}
+
+		// Create connection wrapper
+		wsConn := ws.NewConnection(hub, conn)
+		hub.Register(gameID, wsConn)
+
+		// Send initial game state immediately
+		hub.BroadcastGameState(gameID, gameState)
+
+		// Start connection pumps
+		go wsConn.WritePump()
+		go wsConn.ReadPump()
 	}
 }

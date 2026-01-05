@@ -17,9 +17,10 @@
 # Version: 1.0.0
 # Date: 2025-12-03
 #
-# Usage: You need to create a player first (here: Alice), then use the player ID to create a game.
-# PLAYER_ID=$(scripts/create-player.sh "Alice" | jq -r '.playerId')
-# PLAYER_ID="$PLAYER_ID" MODE=PVP scripts/create-game.sh
+# Usage: PLAYER_ID=<player-id> MODE=[PVP|PVC] ./scripts/02_create-game.sh
+# NOTE: You need to create a player first (here: Alice), then use the player ID to create a game.
+# PLAYER_ID=$(./scripts/01_create-player.sh "Alice" | jq -r '.playerId')
+# PLAYER_ID="$PLAYER_ID" MODE=PVP ./scripts/02_create-game.sh
 
 set -euo pipefail
 

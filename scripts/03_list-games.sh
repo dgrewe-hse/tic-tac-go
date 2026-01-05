@@ -17,11 +17,11 @@
 # Version: 1.0.0
 # Date: 2025-12-03
 #
-# Usage: ./list-games.sh
+# Usage: ./scripts/03_list-games.sh [MODE=PVP] [STATUS=WAITING_FOR_PLAYER]
 # NOTE: You need to create a player first (here: Alice), then use the player ID to create a game, afterwards you can list the games.
-# PLAYER_ID=$(scripts/create-player.sh "Alice" | jq -r '.playerId')
-# PLAYER_ID="$PLAYER_ID" MODE=PVP scripts/create-game.sh
-# PLAYER_ID="$PLAYER_ID" MODE=PVP STATUS=WAITING_FOR_PLAYER scripts/list-games.sh
+# PLAYER_ID=$(./scripts/01_create-player.sh "Alice" | jq -r '.playerId')
+# PLAYER_ID="$PLAYER_ID" MODE=PVP ./scripts/02_create-game.sh
+# MODE=PVP STATUS=WAITING_FOR_PLAYER ./scripts/03_list-games.sh
 
 set -euo pipefail
 

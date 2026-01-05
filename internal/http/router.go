@@ -27,6 +27,7 @@ import (
 
 	"tic-tac-go/internal/service"
 	"tic-tac-go/internal/store"
+	"tic-tac-go/internal/ws"
 )
 
 // NewRouter constructs the root HTTP router for the Tic-Tac-Go server.
@@ -39,9 +40,14 @@ func NewRouter() http.Handler {
 	playerStore := store.NewMemoryPlayerStore()
 	gameStore := store.NewMemoryGameStore()
 
+	// WebSocket hub for real-time game updates
+	hub := ws.NewHub()
+	go hub.Run()
+
 	// Services using the stores.
 	playerSvc := service.NewPlayerService(playerStore)
-	gameSvc := service.NewGameService(gameStore, playerStore)
+	// GameService with WebSocket broadcaster
+	gameSvc := service.NewGameServiceWithBroadcaster(gameStore, playerStore, hub)
 
 	// Basic middlewares for logging, recovery and timeouts.
 	r.Use(middleware.RequestID)
@@ -66,6 +72,9 @@ func NewRouter() http.Handler {
 	r.Post("/games/{gameId}/join", JoinGameHandler(gameSvc))
 	// make move within existing game
 	r.Post("/games/{gameId}/moves", MakeMoveHandler(gameSvc))
+
+	// WebSocket endpoint for real-time game updates
+	r.Get("/ws/games/{gameId}", WebSocketHandler(hub, gameSvc))
 
 	return r
 }

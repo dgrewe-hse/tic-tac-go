@@ -49,3 +49,9 @@ type PlayerService interface {
 	CreatePlayer(ctx context.Context, name string) (*models.Player, error)
 	GetPlayer(ctx context.Context, id string) (*models.Player, error)
 }
+
+// GameStateBroadcaster defines an interface for broadcasting game state updates.
+// This allows the service layer to notify WebSocket clients without directly depending on the WebSocket implementation.
+type GameStateBroadcaster interface {
+	BroadcastGameState(gameID string, state *models.GameState)
+}
