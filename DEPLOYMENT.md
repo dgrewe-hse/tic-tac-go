@@ -15,24 +15,48 @@ This guide explains how to deploy the Tic-Tac-Go server using Docker.
    cd tic-tac-go
    ```
 
-2. **Build and run with Docker Compose:**
+2. **Clean up any existing containers (if you encounter errors):**
    ```bash
-   docker-compose up -d
+   # Remove existing container if it exists
+   docker-compose down
+   docker rm -f tic-tac-go-server 2>/dev/null || true
    ```
 
-3. **Verify the server is running:**
+3. **Build and run with Docker Compose:**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+   **Alternative:** If you're using newer Docker versions, use `docker compose` (without hyphen):
+   ```bash
+   docker compose up -d --build
+   ```
+
+   **Für externen Port 8081:** Bearbeiten Sie `docker-compose.yml` und ändern Sie:
+   ```yaml
+   ports:
+     - "8081:8080"  # Extern 8081, intern 8080
+   ```
+
+4. **Verify the server is running:**
    ```bash
    curl http://localhost:8080/health
+   # Oder bei Port 8081:
+   curl http://localhost:8081/health
    ```
 
-4. **View logs:**
+5. **View logs:**
    ```bash
    docker-compose logs -f
+   # or
+   docker compose logs -f
    ```
 
-5. **Stop the server:**
+6. **Stop the server:**
    ```bash
    docker-compose down
+   # or
+   docker compose down
    ```
 
 ## Manual Docker Deployment
@@ -50,14 +74,29 @@ docker images | grep tic-tac-go-server
 ### Run the Container
 
 ```bash
-# Run on default port 8080
+# Run on default port 8080 (extern und intern)
 docker run -d \
   --name tic-tac-go-server \
   -p 8080:8080 \
   --restart unless-stopped \
   tic-tac-go-server:latest
 
-# Or run on a custom port
+# Extern auf Port 8081, intern weiterhin auf 8080
+# Syntax: -p EXTERNER_PORT:INTERNER_PORT
+docker run -d \
+  --name tic-tac-go-server \
+  -p 8081:8080 \
+  --restart unless-stopped \
+  tic-tac-go-server:latest
+
+# Oder extern auf Port 9090, intern auf 8080
+docker run -d \
+  --name tic-tac-go-server \
+  -p 9090:8080 \
+  --restart unless-stopped \
+  tic-tac-go-server:latest
+
+# Wenn Sie den internen Port auch ändern möchten (nicht empfohlen)
 docker run -d \
   --name tic-tac-go-server \
   -p 9090:9090 \
@@ -65,6 +104,12 @@ docker run -d \
   --restart unless-stopped \
   tic-tac-go-server:latest
 ```
+
+**Wichtig:** 
+- Die Syntax ist `-p EXTERNER_PORT:INTERNER_PORT`
+- Der Container läuft **intern** immer auf Port 8080 (oder dem Wert von `TICTACGO_PORT`)
+- Der **externe Port** kann beliebig gewählt werden (z.B. 8081, 9090, etc.)
+- Von außen greifen Sie dann über `http://localhost:EXTERNER_PORT` zu
 
 ### Container Management
 
@@ -101,7 +146,7 @@ services:
       dockerfile: Dockerfile
     container_name: tic-tac-go-server
     ports:
-      - "8080:8080"
+      - "8080:8080"  # Format: "EXTERNAL:INTERNAL" - z.B. "8081:8080" für externen Port 8081
     environment:
       - TICTACGO_PORT=8080
     restart: always
@@ -120,6 +165,12 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
+```
+
+**Für externen Port 8081 ändern Sie die ports-Zeile:**
+```yaml
+ports:
+  - "8081:8080"  # Extern 8081, intern 8080
 ```
 
 Deploy with:
@@ -218,17 +269,65 @@ Expected response:
    docker info
    ```
 
+### Docker Compose Errors
+
+**If you encounter `KeyError: 'ContainerConfig'` or similar errors:**
+
+1. **Clean up existing containers and images:**
+   ```bash
+   docker-compose down
+   docker rm -f tic-tac-go-server 2>/dev/null || true
+   docker rmi tic-tac-go-server:latest 2>/dev/null || true
+   docker rmi tic-tac-go_tic-tac-go-server:latest 2>/dev/null || true
+   ```
+
+2. **Rebuild from scratch:**
+   ```bash
+   docker-compose build --no-cache
+   docker-compose up -d
+   ```
+
+3. **Alternative: Use Docker directly instead of docker-compose:**
+   ```bash
+   docker build -t tic-tac-go-server:latest .
+   docker run -d --name tic-tac-go-server -p 8080:8080 tic-tac-go-server:latest
+   ```
+
+4. **If using newer Docker (v20.10+), use `docker compose` (without hyphen):**
+   ```bash
+   docker compose down
+   docker compose up -d --build
+   ```
+
 ### Port conflicts
 
-If port 8080 is already in use, change the port:
+If port 8080 is already in use, you have two options:
 
+**Option 1: Map external port to internal port 8080 (empfohlen)**
 ```bash
+# Extern auf Port 8081, intern auf 8080
+docker run -d \
+  --name tic-tac-go-server \
+  -p 8081:8080 \
+  --restart unless-stopped \
+  tic-tac-go-server:latest
+
+# Dann über http://localhost:8081 erreichbar
+curl http://localhost:8081/health
+```
+
+**Option 2: Ändern Sie auch den internen Port (nicht empfohlen)**
+```bash
+# Extern und intern auf Port 9090
 docker run -d \
   --name tic-tac-go-server \
   -p 9090:9090 \
   -e TICTACGO_PORT=9090 \
+  --restart unless-stopped \
   tic-tac-go-server:latest
 ```
+
+**Empfehlung:** Verwenden Sie Option 1, da der Container standardmäßig auf Port 8080 konfiguriert ist.
 
 ### Permission issues
 
