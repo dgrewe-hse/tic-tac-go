@@ -50,13 +50,7 @@ func NewRouter() http.Handler {
 	// GameService with WebSocket broadcaster
 	gameSvc := service.NewGameServiceWithBroadcaster(gameStore, playerStore, hub)
 
-	// Basic middlewares for logging, recovery and timeouts.
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	// CORS configuration:
+	// CORS configuration
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -66,6 +60,11 @@ func NewRouter() http.Handler {
 		MaxAge:           300,
 	}))
 
+	// Basic middlewares for logging, recovery and timeouts
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(WithPlayerID)
 
