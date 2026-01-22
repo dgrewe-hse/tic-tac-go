@@ -50,25 +50,22 @@ func NewRouter() http.Handler {
 	// GameService with WebSocket broadcaster
 	gameSvc := service.NewGameServiceWithBroadcaster(gameStore, playerStore, hub)
 
-	// CORS configuration:
-	// allow all origins, methods, and header in chi router
-	r.Use(cors.Handler(cors.Options{
-		// Allow all origins, including from other ports or hosts.
-		AllowedOrigins: []string{"*"},
-		// Allow common methods used by the API.
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		// Allow all headers so that z.B. X-Player-Id gesendet werden kann.
-		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{},
-		AllowCredentials: false,
-		MaxAge:           300, // In seconds
-	}))
-
 	// Basic middlewares for logging, recovery and timeouts.
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// CORS configuration:
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Player-Id"},
+		ExposedHeaders:   []string{"Content-Length"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(WithPlayerID)
 
