@@ -71,6 +71,7 @@ func NewRouter() http.Handler {
 
 	// Health check endpoint to verify the server is up.
 	r.Get("/health", healthHandler)
+	r.Head("/health", healthHandler)
 	// get a list of created games
 	r.Get("/games", ListGamesHandler(gameSvc))
 	// get existing game by id
